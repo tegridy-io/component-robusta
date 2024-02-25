@@ -1,4 +1,38 @@
 parameters:
   robusta:
     =_metadata: {}
-    namespace: syn-robusta
+
+    namespace:
+      annotations: {}
+      labels: {}
+      name: syn-robusta
+
+    charts:
+      robusta:
+        source: https://robusta-charts.storage.googleapis.com
+        version: 0.10.29
+
+    global:
+      signing_key: 95bf47a6-f32c-42c0-a5e4-5ae22d414d56
+      account_id: 3aaaa289-0989-428d-8373-5589d4201492
+      alertmanager_url: http://alertmanager-alertmanager-system.efk-monitoring-system.svc.cluster.local:9093
+      prometheus_url: http://prometheus-system.efk-monitoring-system.svc.cluster.local:9090
+
+    sinks: []
+
+    helmValues:
+      clusterName: barn-kitten
+      globalConfig: ${robusta:global}
+      sinksConfig: ${robusta:sinks}
+      enablePlatformPlaybooks: false
+      playbooksPersistentVolume: true
+      playbookRepos:
+        robusta-chaos:
+          url: "https://github.com/robusta-dev/robusta-chaos.git"
+      alertRelabel:
+        - source: "pod_name"
+          target: "pod"
+          operation: "add"
+      rsa:
+        public: '?{vaultkv:${cluster:tenant}/${cluster:name}/robusta/public}'
+        private: '?{vaultkv:${cluster:tenant}/${cluster:name}/robusta/private}'

@@ -1,3 +1,9 @@
-# Overwrite parameters here
-
-# parameters: {...}
+parameters:
+  robusta:
+    global:
+      signing_key: my-signing-key
+      account_id: my-account-id
+    sinks:
+      - discord_sink:
+          name: personal_discord_sink
+          url: https://webhook

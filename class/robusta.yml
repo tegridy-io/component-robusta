@@ -1,5 +1,11 @@
 parameters:
   kapitan:
+    dependencies:
+      - type: helm
+        source: ${robusta:charts:robusta:source}
+        chart_name: robusta
+        version: ${robusta:charts:robusta:version}
+        output_path: ${_base_directory}/helmcharts/robusta/${robusta:charts:robusta:version}/
     compile:
       - input_paths:
           - ${_base_directory}/component/app.jsonnet
@@ -9,3 +15,18 @@ parameters:
           - ${_base_directory}/component/main.jsonnet
         input_type: jsonnet
         output_path: robusta/
+      - input_paths:
+          - ${_base_directory}/helmcharts/robusta/${robusta:charts:robusta:version}
+        input_type: helm
+        output_path: ${_instance}//10_helmchart/
+        helm_values: ${robusta:helmValues}
+        helm_params:
+          name: robusta
+          namespace: ${robusta:namespace:name}
+          dependency_update: false
+  commodore:
+    postprocess:
+      filters:
+        - type: jsonnet
+          path: robusta/10_helmchart/robusta/templates
+          filter: postprocess/patch_manifests.jsonnet
