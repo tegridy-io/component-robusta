@@ -1,0 +1,4 @@
+parameters:
+  robusta:
+    =_metadata: {}
+    namespace: syn-robusta
