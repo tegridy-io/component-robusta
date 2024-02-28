@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: robusta-forwarder
+  namespace: syn-robusta
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: robusta-forwarder
+  template:
+    metadata:
+      annotations:
+        checksum/config: 4c00efca13a7123421095357e38f4e547553dc33019016826c2863be5352235b
+      labels:
+        app: robusta-forwarder
+    spec:
+      automountServiceAccountToken: true
+      containers:
+        - env:
+            - name: KW_CONFIG
+              value: /config
+            - name: ENABLE_PPROF
+              value: 'true'
+          image: us-central1-docker.pkg.dev/genuine-flight-317411/devel/kubewatch:v2.5
+          imagePullPolicy: IfNotPresent
+          name: kubewatch
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 10m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {}
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsUser: 1000
+          volumeMounts:
+            - mountPath: /config
+              name: robusta-kubewatch-config
+      serviceAccountName: robusta-forwarder-service-account
+      volumes:
+        - configMap:
+            name: robusta-kubewatch-config
+          name: robusta-kubewatch-config

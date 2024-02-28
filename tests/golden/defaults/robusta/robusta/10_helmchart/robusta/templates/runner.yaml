@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: robusta-runner-secret
+  namespace: syn-robusta
+stringData:
+  SENTRY_DSN: https://53b627690db14de7b02095407596fa16@o1120648.ingest.sentry.io/6156573
+type: Opaque
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: persistent-playbooks-pv-claim
+  namespace: syn-robusta
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: robusta-runner
+    target: robusta-runner
+  name: robusta-runner
+  namespace: syn-robusta
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 5000
+  selector:
+    app: robusta-runner
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: robusta-runner
+  name: robusta-runner
+  namespace: syn-robusta
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: robusta-runner
+  template:
+    metadata:
+      labels:
+        app: robusta-runner
+        robustaComponent: runner
+    spec:
+      automountServiceAccountToken: true
+      containers:
+        - env:
+            - name: PLAYBOOKS_CONFIG_FILE_PATH
+              value: /etc/robusta/config/active_playbooks.yaml
+            - name: RELEASE_NAME
+              value: robusta
+            - name: PROMETHEUS_ENABLED
+              value: 'false'
+            - name: MANAGED_CONFIGURATION_ENABLED
+              value: 'false'
+            - name: SEND_ADDITIONAL_TELEMETRY
+              value: 'false'
+            - name: LOG_LEVEL
+              value: INFO
+            - name: INSTALLATION_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: RUNNER_VERSION
+              value: 0.10.29
+            - name: CERTIFICATE
+              value: null
+            - name: IMAGE_REGISTRY
+              value: us-central1-docker.pkg.dev/genuine-flight-317411/devel
+            - name: CLUSTER_DOMAIN
+              value: cluster.local
+          envFrom:
+            - secretRef:
+                name: robusta-runner-secret
+                optional: true
+          image: us-central1-docker.pkg.dev/genuine-flight-317411/devel/robusta-runner:0.10.29
+          imagePullPolicy: IfNotPresent
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - bash
+                  - -c
+                  - kill -SIGINT 1
+          name: runner
+          resources:
+            limits:
+              memory: 1024Mi
+            requests:
+              cpu: 250m
+              memory: 1024Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {}
+            privileged: false
+            readOnlyRootFilesystem: false
+          volumeMounts:
+            - mountPath: /etc/robusta/auth
+              name: auth-config-secret
+            - mountPath: /etc/robusta/config
+              name: playbooks-config-secret
+            - mountPath: /etc/robusta/playbooks/storage
+              name: persistent-playbooks-storage
+      serviceAccountName: robusta-runner-service-account
+      volumes:
+        - name: playbooks-config-secret
+          secret:
+            optional: true
+            secretName: robusta-playbooks-config-secret
+        - name: auth-config-secret
+          secret:
+            optional: true
+            secretName: robusta-auth-config-secret
+        - name: persistent-playbooks-storage
+          persistentVolumeClaim:
+            claimName: persistent-playbooks-pv-claim

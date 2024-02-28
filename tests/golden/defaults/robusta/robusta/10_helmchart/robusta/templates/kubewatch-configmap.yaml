@@ -1,0 +1,32 @@
+apiVersion: v1
+data:
+  .kubewatch.yaml: |-
+    handler:
+      cloudevent:
+        url: "http://robusta-runner:80/api/handle"
+    namespace: ""
+    resource:
+      clusterrole: true
+      clusterrolebinding: true
+      configmap: true
+      coreevent: false
+      daemonset: true
+      deployment: true
+      event: true
+      hpa: true
+      ingress: true
+      job: true
+      namespace: true
+      node: true
+      persistentvolume: true
+      pod: true
+      replicaset: true
+      replicationcontroller: false
+      secret: false
+      serviceaccount: true
+      services: true
+      statefulset: true
+kind: ConfigMap
+metadata:
+  name: robusta-kubewatch-config
+  namespace: syn-robusta
